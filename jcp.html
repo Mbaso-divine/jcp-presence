@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JCP - Registre de Présence</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  :root {
+    --primary: #667eea; --primary-dark: #764ba2;
+    --success: #10b981; --danger: #ef4444;
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+    --gray-500: #6b7280; --gray-700: #374151; --gray-800: #1f2937;
+  }
+  body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header { text-align: center; color: white; margin-bottom: 30px; padding-top: 20px; }
+  .header .logo {
+    width: 80px; height: 80px; margin: 0 auto 15px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid rgba(255,255,255,0.4); font-size: 26px; font-weight: 700;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+  .header p { opacity: 0.9; font-size: 14px; }
+  .tabs {
+    display: flex; gap: 10px; margin-bottom: 20px;
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+    padding: 6px; border-radius: 16px; max-width: 400px;
+    margin-left: auto; margin-right: auto;
+  }
+  .tab {
+    flex: 1; padding: 12px; border: none; background: transparent;
+    color: white; font-weight: 600; border-radius: 12px; cursor: pointer;
+    transition: all 0.3s; font-size: 14px;
+  }
+  .tab.active { background: white; color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+  .card {
+    background: white; border-radius: 24px; padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 20px;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .hidden { display: none !important; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 14px 16px; border: 2px solid var(--gray-200);
+    border-radius: 12px; font-size: 15px; outline: none;
+    transition: all 0.2s; font-family: inherit; background: white;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+  }
+  .btn {
+    padding: 14px 24px; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.3s; font-family: inherit;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; width: 100%; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102,126,234,0.4); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #059669; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-small { padding: 8px 14px; font-size: 13px; }
+  .success-msg {
+    margin-top: 20px; padding: 16px; background: #d1fae5;
+    border: 1px solid #6ee7b7; border-radius: 12px; text-align: center;
+    animation: fadeIn 0.4s ease;
+  }
+  .success-msg p:first-child { color: #065f46; font-weight: 600; font-size: 15px; }
+  .success-msg p:last-child { color: #047857; font-size: 13px; margin-top: 4px; }
+  .section-title {
+    font-size: 18px; font-weight: 700; color: var(--gray-800);
+    margin-bottom: 20px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .stat-card { background: white; border-radius: 18px; padding: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+  .stat-card .label { font-size: 13px; color: var(--gray-500); font-weight: 500; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: var(--primary); margin-top: 6px; }
+  .stat-card .value.purple { color: var(--primary-dark); }
+  .stat-card .small-value { font-size: 15px !important; font-weight: 600; color: var(--gray-800) !important; margin-top: 10px; }
+  .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead { background: var(--gray-50); }
+  th {
+    text-align: left; padding: 14px 16px; font-weight: 600;
+    color: var(--gray-700); font-size: 13px; text-transform: uppercase;
+    letter-spacing: 0.5px; white-space: nowrap;
+  }
+  td { padding: 14px 16px; border-top: 1px solid var(--gray-100); color: var(--gray-700); }
+  tbody tr:hover { background: rgba(102,126,234,0.04); }
+  tbody tr:first-child td { border-top: none; }
+  .badge { display: inline-block; padding: 4px 12px; background: #ede9fe; color: var(--primary-dark); border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--gray-500); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 10px; opacity: 0.5; }
+  .activites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .activite-card { background: var(--gray-50); border: 2px solid var(--gray-200); border-radius: 14px; padding: 16px; transition: all 0.2s; }
+  .activite-card:hover { border-color: var(--primary); background: white; }
+  .activite-card .nom { font-weight: 600; color: var(--gray-800); margin-bottom: 6px; font-size: 15px; }
+  .activite-card .meta { font-size: 12px; color: var(--gray-500); margin-bottom: 12px; }
+  .activite-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: end; }
+  .activite-form .form-group { margin-bottom: 0; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+  .toolbar select {
+    padding: 10px 14px; border: 2px solid var(--gray-200);
+    border-radius: 10px; font-size: 14px; outline: none;
+    font-family: inherit; background: white; cursor: pointer;
+  }
+  .toolbar select:focus { border-color: var(--primary); }
+  .loading { text-align: center; padding: 40px; color: var(--gray-500); }
+  .loading .spinner {
+    width: 40px; height: 40px; margin: 0 auto 15px;
+    border: 3px solid var(--gray-200); border-top-color: var(--primary);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--gray-800); color: white; padding: 14px 24px;
+    border-radius: 12px; font-size: 14px; font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); opacity: 0;
+    transition: all 0.4s; z-index: 1000; max-width: 90%; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px); display: flex;
+    align-items: center; justify-content: center; padding: 20px; z-index: 999;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: white; border-radius: 20px; padding: 28px; max-width: 400px; width: 100%; animation: fadeIn 0.3s ease; }
+  .modal h3 { color: var(--gray-800); margin-bottom: 8px; font-size: 20px; }
+  .modal p { color: var(--gray-500); font-size: 14px; margin-bottom: 20px; }
+  @media (max-width: 720px) {
+    .card { padding: 22px; }
+    .header h1 { font-size: 22px; }
+    .activite-form { grid-template-columns: 1fr; }
+    .activite-form .btn { width: 100%; }
+    th, td { padding: 10px 12px; font-size: 13px; }
+    .stat-card .value { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">JCP</div>
+    <h1>Registre de Présence</h1>
+    <p>Jeunesse de la Cité de Paix</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('membre', this)">✍️ Pointer</button>
+    <button class="tab" onclick="switchTab('chef', this)">📊 Tableau de bord</button>
+  </div>
+
+  <!-- VUE MEMBRE -->
+  <div id="view-membre" class="view">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+      <h2 class="section-title" style="justify-content:center;">Marquer ma présence</h2>
+
+      <div id="membreLoading" class="loading">
+        <div class="spinner"></div>
+        <p>Chargement des activités...</p>
+      </div>
+
+      <form id="presenceForm" class="hidden">
+        <div class="form-group">
+          <label>Votre nom complet</label>
+          <input type="text" id="nom" placeholder="Ex : Jean Dupont" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Activité</label>
+          <select id="activite" required>
+            <option value="">-- Choisir une activité --</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">✅ Marquer ma présence</button>
+      </form>
+
+      <div id="successMsg" class="success-msg hidden">
+        <p>✨ Présence enregistrée avec succès !</p>
+        <p>Que Dieu te bénisse 🙏</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VUE CHEF -->
+  <div id="view-chef" class="view hidden">
+    <div class="card">
+      <h2 class="section-title">➕ Créer une nouvelle activité</h2>
+      <form id="activiteForm" class="activite-form">
+        <div class="form-group">
+          <label>Nom de l'activité</label>
+          <input type="text" id="actNom" placeholder="Ex : Culte du dimanche" required>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="actDate" required>
+        </div>
+        <div class="form-group">
+          <label>Heure</label>
+          <input type="time" id="actHeure">
+        </div>
+        <button type="submit" class="btn btn-primary">Créer</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">
+        📋 Activités existantes
+        <span id="activitesCount" class="badge">0</span>
+      </h2>
+      <div id="activitesList" class="activites-grid"></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Total présences</div>
+        <div class="value" id="totalPresences">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Activités créées</div>
+        <div class="value purple" id="totalActivites">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Dernière présence</div>
+        <div class="small-value" id="dernierePresence">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">
+        👥 Liste des présents
+        <span id="presencesCount" class="badge">0</span>
+      </h2>
+      <div class="toolbar">
+        <select id="filtreActivite">
+          <option value="">Toutes les activités</option>
+        </select>
+        <button class="btn btn-success btn-small" id="exportBtn">📥 Exporter CSV</button>
+        <button class="btn btn-danger btn-small" id="clearBtn">🗑️ Tout effacer</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nom</th>
+              <th>Activité</th>
+              <th>Date & heure</th>
+            </tr>
+          </thead>
+          <tbody id="presencesTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOT DE PASSE -->
+<div id="passwordModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>🔐 Accès responsable</h3>
+    <p>Entre le mot de passe pour accéder au tableau de bord.</p>
+    <div class="form-group">
+      <input type="password" id="pwdInput" placeholder="Mot de passe" autocomplete="off">
+    </div>
+    <button class="btn btn-primary" onclick="checkPassword()">Valider</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- =====================================================
+     FIREBASE SDK + LOGIQUE
+     ===================================================== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, deleteDoc, doc,
+  onSnapshot, query, orderBy, serverTimestamp, writeBatch, getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ============ TA CONFIG FIREBASE (déjà remplie !) ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyClpmA2ALxOVTaVYiP7VX9p9cQrT92rNlU",
+  authDomain: "jeunesse-539c3.firebaseapp.com",
+  projectId: "jeunesse-539c3",
+  storageBucket: "jeunesse-539c3.firebasestorage.app",
+  messagingSenderId: "650737435601",
+  appId: "1:650737435601:web:6f0d089531a58c34c6d6f0"
+};
+
+/* ============ MOT DE PASSE DU CHEF (change-le !) ============ */
+const CHEF_PASSWORD = "jcp2024"; // ← ⚠️ CHANGE CE MOT DE PASSE
+
+/* ============ INITIALISATION ============ */
+let db;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+} catch (e) {
+  console.error("Erreur Firebase :", e);
+}
+
+let ACTIVITES = [];
+let PRESENCES = [];
+let isChefUnlocked = false;
+
+/* ============ NAVIGATION ONGLETS ============ */
+window.switchTab = function(tab, btn) {
+  if (tab === 'chef' && !isChefUnlocked) {
+    document.getElementById('passwordModal').classList.remove('hidden');
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+    window._pendingTab = btn;
+    return;
+  }
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById('view-' + tab).classList.remove('hidden');
+};
+
+window.checkPassword = function() {
+  const val = document.getElementById('pwdInput').value;
+  if (val === CHEF_PASSWORD) {
+    isChefUnlocked = true;
+    document.getElementById('passwordModal').classList.add('hidden');
+    if (window._pendingTab) {
+      switchTab('chef', window._pendingTab);
+      window._pendingTab = null;
+    }
+  } else {
+    showToast('❌ Mot de passe incorrect');
+    document.getElementById('pwdInput').value = '';
+  }
+};
+
+document.getElementById('pwdInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+/* ============ ÉCOUTE TEMPS RÉEL FIRESTORE ============ */
+function listenFirestore() {
+  if (!db) return showToast('⚠️ Firebase non configuré');
+
+  onSnapshot(
+    query(collection(db, 'activites'), orderBy('createdAt', 'desc')),
+    (snap) => {
+      ACTIVITES = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderMembreForm();
+      renderActivitesList();
+      renderStats();
+      refreshFiltre();
+    },
+    (err) => console.error("Erreur activites:", err)
+  );
+
+  onSnapshot(
+    query(collection(db, 'presences'), orderBy('createdAt', 'desc')),
+    (snap) => {
+      PRESENCES = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderPresencesTable();
+      renderStats();
+    },
+    (err) => console.error("Erreur presences:", err)
+  );
+}
+
+/* ============ VUE MEMBRE ============ */
+function renderMembreForm() {
+  const loading = document.getElementById('membreLoading');
+  const form = document.getElementById('presenceForm');
+  const select = document.getElementById('activite');
+  const current = select.value;
+
+  loading.classList.add('hidden');
+  form.classList.remove('hidden');
+  select.innerHTML = '<option value="">-- Choisir une activité --</option>';
+
+  if (ACTIVITES.length === 0) {
+    const opt = document.createElement('option');
+    opt.disabled = true;
+    opt.textContent = "Aucune activité disponible";
+    select.appendChild(opt);
+    return;
+  }
+  ACTIVITES.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.nom} — ${formatDate(a.date)}${a.heure ? ' à ' + a.heure : ''}`;
+    select.appendChild(opt);
+  });
+  if (current && ACTIVITES.some(a => a.id === current)) select.value = current;
+}
+
+/* ============ ENREGISTRER UNE PRÉSENCE ============ */
+document.getElementById('presenceForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!db) return showToast('⚠️ Firebase non configuré');
+
+  const nom = document.getElementById('nom').value.trim();
+  const activiteId = document.getElementById('activite').value;
+  if (!nom) return showToast('⚠️ Entre ton nom');
+  if (!activiteId) return showToast('⚠️ Choisis une activité');
+
+  const activite = ACTIVITES.find(a => a.id === activiteId);
+  if (!activite) return showToast('❌ Activité introuvable');
+
+  const deja = PRESENCES.find(p =>
+    p.activiteId === activiteId &&
+    (p.nom || '').toLowerCase() === nom.toLowerCase()
+  );
+  if (deja) return showToast('ℹ️ Tu as déjà pointé pour cette activité');
+
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = '⏳ Envoi...';
+
+  try {
+    await addDoc(collection(db, 'presences'), {
+      nom, activiteId,
+      activiteNom: activite.nom,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('presenceForm').reset();
+    const msg = document.getElementById('successMsg');
+    msg.classList.remove('hidden');
+    setTimeout(() => msg.classList.add('hidden'), 4000);
+    showToast('✅ Présence enregistrée !');
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Erreur : ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Marquer ma présence';
+  }
+});
+
+/* ============ CRÉER UNE ACTIVITÉ ============ */
+document.getElementById('activiteForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!db) return showToast('⚠️ Firebase non configuré');
+
+  const nom = document.getElementById('actNom').value.trim();
+  const date = document.getElementById('actDate').value;
+  const heure = document.getElementById('actHeure').value;
+  if (!nom || !date) return showToast('⚠️ Nom et date obligatoires');
+
+  try {
+    await addDoc(collection(db, 'activites'), {
+      nom, date, heure, createdAt: serverTimestamp()
+    });
+    e.target.reset();
+    showToast('✅ Activité créée !');
+  } catch (err) {
+    showToast('❌ Erreur : ' + err.message);
+  }
+});
+
+/* ============ AFFICHER LES ACTIVITÉS ============ */
+function renderActivitesList() {
+  const container = document.getElementById('activitesList');
+  document.getElementById('activitesCount').textContent = ACTIVITES.length;
+  if (ACTIVITES.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">
+      <div class="icon">📭</div><p>Aucune activité créée</p></div>`;
+    return;
+  }
+  container.innerHTML = ACTIVITES.map(a => `
+    <div class="activite-card">
+      <div class="nom">${escapeHtml(a.nom)}</div>
+      <div class="meta">📅 ${formatDate(a.date)}${a.heure ? ' • 🕐 ' + a.heure : ''}</div>
+      <button class="btn btn-danger btn-small" onclick="supprimerActivite('${a.id}')">Supprimer</button>
+    </div>
+  `).join('');
+}
+
+window.supprimerActivite = async function(id) {
+  if (!confirm("Supprimer cette activité ainsi que ses présences ?")) return;
+  if (!db) return;
+  try {
+    await deleteDoc(doc(db, 'activites', id));
+    const toDelete = PRESENCES.filter(p => p.activiteId === id);
+    for (const p of toDelete) await deleteDoc(doc(db, 'presences', p.id));
+    showToast('🗑️ Activité supprimée');
+  } catch (err) {
+    showToast('❌ Erreur : ' + err.message);
+  }
+};
+
+/* ============ STATISTIQUES ============ */
+function renderStats() {
+  document.getElementById('totalPresences').textContent = PRESENCES.length;
+  document.getElementById('totalActivites').textContent = ACTIVITES.length;
+  document.getElementById('dernierePresence').textContent = PRESENCES[0] ? PRESENCES[0].nom : '—';
+}
+
+/* ============ TABLEAU DES PRÉSENCES ============ */
+function renderPresencesTable() {
+  const filtre = document.getElementById('filtreActivite').value;
+  let data = PRESENCES;
+  if (filtre) data = data.filter(p => p.activiteId === filtre);
+
+  const tbody = document.getElementById('presencesTable');
+  document.getElementById('presencesCount').textContent = data.length;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">
+      <div class="empty-state"><div class="icon">👥</div>
+      <p>Aucune présence enregistrée</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((p, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${escapeHtml(p.nom)}</strong></td>
+      <td><span class="badge">${escapeHtml(p.activiteNom || '—')}</span></td>
+      <td>${formatDateTime(p.createdAt)}</td>
+    </tr>
+  `).join('');
+}
+
+/* ============ FILTRE ============ */
+function refreshFiltre() {
+  const select = document.getElementById('filtreActivite');
+  const current = select.value;
+  select.innerHTML = '<option value="">Toutes les activités</option>';
+  ACTIVITES.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.nom;
+    select.appendChild(opt);
+  });
+  if (current && ACTIVITES.some(a => a.id === current)) select.value = current;
+}
+document.getElementById('filtreActivite').addEventListener('change', renderPresencesTable);
+
+/* ============ EXPORT CSV ============ */
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const filtre = document.getElementById('filtreActivite').value;
+  let data = PRESENCES;
+  if (filtre) data = data.filter(p => p.activiteId === filtre);
+  if (data.length === 0) return showToast('⚠️ Aucune donnée à exporter');
+
+  const rows = [['Nom', 'Activité', 'Date', 'Heure']];
+  data.forEach(p => {
+    const d = p.createdAt?.toDate?.() || new Date();
+    rows.push([p.nom, p.activiteNom || '',
+      d.toLocaleDateString('fr-FR'),
+      d.toLocaleTimeString('fr-FR')]);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `presences_jcp_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 Export CSV téléchargé !');
+});
+
+/* ============ TOUT EFFACER ============ */
+document.getElementById('clearBtn').addEventListener('click', async () => {
+  if (!confirm("⚠️ Effacer TOUTES les données (activités + présences) ?")) return;
+  if (!confirm("Confirmer une dernière fois ? Action irréversible.")) return;
+  if (!db) return;
+  try {
+    const batch = writeBatch(db);
+    const actSnap = await getDocs(collection(db, 'activites'));
+    actSnap.forEach(d => batch.delete(d.ref));
+    const presSnap = await getDocs(collection(db, 'presences'));
+    presSnap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    showToast('🗑️ Toutes les données effacées');
+  } catch (err) {
+    showToast('❌ Erreur : ' + err.message);
+  }
+});
+
+/* ============ UTILITAIRES ============ */
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return dateStr;
+  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+}
+function formatDateTime(ts) {
+  if (!ts) return '—';
+  const d = ts?.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, s => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[s]));
+}
+function showToast(message) {
+  const t = document.getElementById('toast');
+  t.textContent = message;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ============ DÉMARRAGE ============ */
+document.getElementById('actDate').value = new Date().toISOString().split('T')[0];
+listenFirestore();
+</script>
+
+</body>
+</html>
